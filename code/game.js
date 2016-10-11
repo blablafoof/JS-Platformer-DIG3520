@@ -14,20 +14,26 @@ function Level(plan) {
 
     // Loop through each array element in the inner array for the type of the tile
     for (var x = 0; x < this.width; x++) {
-      // Get the type from that character in the string. It can be 'x', '!' or ' '
-      // If the character is ' ', assign null.
+		// Get the type from that character in the string. It can be 'x', '!' or ' '
+		// If the character is ' ', assign null.
 
-      var ch = line[x], fieldType = null;
+		var ch = line[x], fieldType = null;
 
-      // Use if and else to handle the two cases
-      if (ch == "x")
-        fieldType = "wall";
-      // Because there is a third case (space ' '), use an "else if" instead of "else"
-      else if (ch == "!")
-        fieldType = "lava";
+		// Use if and else to handle the two cases
+		if (ch == "x")
+			fieldType = "wall";
+		// Because there is a third case (space ' '), use an "else if" instead of "else"
+		else if (ch == "!")
+			fieldType = "lava";
+		else if (ch == "y")
+			fieldType = "floater";
+		else if (ch == "o")
+			fieldType = "money";
+		else if (ch == "@")
+			fieldType = "goal";
 
-      // "Push" the fieldType, which is a string, onto the gridLine array (at the end).
-      gridLine.push(fieldType);
+		  // "Push" the fieldType, which is a string, onto the gridLine array (at the end).
+		gridLine.push(fieldType);
     }
     // Push the entire row onto the array of rows.
     this.grid.push(gridLine);
@@ -91,8 +97,8 @@ DOMDisplay.prototype.drawBackground = function() {
 
 // Hand-tuned values to determine scroll speed for the screen 
 
-var screenXSpeed = 100;
-var screenYSpeed = 100;
+var screenXSpeed = 400;
+var screenYSpeed = 400;
 
 // Scrolls the viewport by using arrow keys
 DOMDisplay.prototype.scrollView = function(keys, step) {
