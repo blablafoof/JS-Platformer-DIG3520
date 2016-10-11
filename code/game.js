@@ -97,8 +97,8 @@ DOMDisplay.prototype.drawBackground = function() {
 
 // Hand-tuned values to determine scroll speed for the screen 
 
-var screenXSpeed = 400;
-var screenYSpeed = 400;
+var screenXSpeed = 350;
+var screenYSpeed = 350;
 
 // Scrolls the viewport by using arrow keys
 DOMDisplay.prototype.scrollView = function(keys, step) {
