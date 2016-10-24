@@ -1,12 +1,34 @@
-.background    { background: rgb(52, 166, 251);
-                 table-layout: fixed;
-                 border-spacing: 0;   }
-.background td { padding: 0;          }
-.lava          { background: rgb(255, 100, 100); }
-.wall          { background: white;   }
+.background    
+{ 
+	background: #32C3E0;                 
+	table-layout: fixed;
+	border-spacing: 0;   
+}
 
-.actor  { position: absolute;  }
-.player { background: rgb(64, 64, 64); }
+.background td 
+{ 
+	padding: 0;          
+}
+
+.lava          
+{ 
+	background: #7f0000; 
+}
+
+.wall
+{
+	background: grey;   
+}
+
+.actor  
+{ 
+position: absolute;  
+}
+
+.player 
+{ 
+background: #FF69B4;
+}
 
 .game {
   overflow: hidden;

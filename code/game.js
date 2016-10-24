@@ -190,7 +190,7 @@ Level.prototype.animate = function(step, keys) {
 
 var maxStep = 0.05;
 
-var playerXSpeed = 7;
+var playerXSpeed = 9;
 
 Player.prototype.moveX = function(step, level, keys) {
 	this.speed.x = 0;
@@ -205,9 +205,9 @@ Player.prototype.moveX = function(step, level, keys) {
 		this.pos = newPos;
 };
 
-var gravity = 30;
-var jumpSpeed = 17;
-var playerYSpeed = 7;
+var gravity = 60;
+var jumpSpeed = 25;
+var playerYSpeed = 8;
 
 Player.prototype.moveY = function(step, level, keys) {
 	this.speed.y += step * gravity;;
@@ -221,6 +221,10 @@ Player.prototype.moveY = function(step, level, keys) {
 			this.speed.y = -jumpSpeed;
 		else
 			this.speed.y = 0;
+		if(obstacle == "lava")
+		{
+			this.pos = new Vector(3, 7);
+		}
 	}
 	else
 	{
