@@ -22,14 +22,18 @@
 
 .actor  
 { 
-position: absolute;  
+	position: absolute;  
 }
 
 .player 
 { 
-background: #FF69B4;
+	background: #FF69B4;
 }
 
+.coin
+{
+	background: yellow;
+}
 .game {
   overflow: hidden;
   max-width: 600px;
