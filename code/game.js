@@ -1,7 +1,8 @@
 // Map each class of actor to a character
 var actorChars = {
 	"@": Player,
-	"o": Coin // A coin will wobble up and down
+	"o": Coin, // A coin will wobble up and down
+	"r": Ruby
 };
 
 function Level(plan) {
@@ -85,6 +86,14 @@ function Coin(pos) {
 }
 Coin.prototype.type = "coin";
 
+function Ruby(pos) {
+	this.basePos = this.pos = pos.plus(new Vector(0.0, 0.1));
+	this.size = new Vector(0.7, 0.7);
+
+	this.wobble = Math.random() * Math.PI * 2;
+}
+Ruby.prototype.type = "ruby";
+
 // Helper function to easily create an element of a type provided 
 // and assign it a class.
 function elt(name, className) {
@@ -128,6 +137,23 @@ DOMDisplay.prototype.drawBackground = function() {
 	return table;
 };
 
+// All actors are above (in front of) background elements.  
+DOMDisplay.prototype.drawActors = function() {
+  // Create a new container div for actor dom elements
+  var wrap = elt("div");
+
+  // Create a new element for each actor each frame
+  this.level.actors.forEach(function(actor) {
+    var rect = wrap.appendChild(elt("div",
+                                    "actor " + actor.type));
+    rect.style.width = actor.size.x * scale + "px";
+    rect.style.height = actor.size.y * scale + "px";
+    rect.style.left = actor.pos.x * scale + "px";
+    rect.style.top = actor.pos.y * scale + "px";
+  });
+  return wrap;
+};
+
 // Draw the player agent
 DOMDisplay.prototype.drawPlayer = function() {
 	// Create a new container div for actor dom elements
@@ -146,10 +172,10 @@ DOMDisplay.prototype.drawPlayer = function() {
 };
 
 DOMDisplay.prototype.drawFrame = function() {
-  if (this.actorLayer)
-    this.wrap.removeChild(this.actorLayer);
-  this.actorLayer = this.wrap.appendChild(this.drawPlayer());
-  this.scrollPlayerIntoView();
+	if (this.actorLayer)
+		this.wrap.removeChild(this.actorLayer);
+	this.actorLayer = this.wrap.appendChild(this.drawActors());
+	this.scrollPlayerIntoView();
 };
 
 DOMDisplay.prototype.scrollPlayerIntoView = function() {
@@ -177,32 +203,6 @@ DOMDisplay.prototype.scrollPlayerIntoView = function() {
 		this.wrap.scrollTop = center.y + margin - height;
 };
 
-/*
-Level.prototype.obstacleAt = function(pos, size)
-{
-	var xStart = Math.floor(pos.x);
-	var xEnd = Math.ceil(pos.x + size.x);
-	var yStart = Math.floor(pos.y);
-	var yEnd = Math.ceil(pos.y + size.y);
-	
-	if(xStart < 0 || xEnd > this.width || yStart < 0 || yEnd > this.height)
-		return 'wall';
-		
-	for(var y = yStart; y < yEnd; y++)
-	{
-		for(var x = xStart; x < xEnd; x++)
-		{
-			var fieldType = this.grid[y][x];
-			
-			//if field type exists, then return field type
-			if(fieldType)
-			{
-				return fieldType;
-			}
-			
-		}
-	}
-};*/
 
 // Return the first obstacle found given a size and position.
 Level.prototype.obstacleAt = function(pos, size) {
@@ -224,7 +224,8 @@ Level.prototype.obstacleAt = function(pos, size) {
 	for (var y = yStart; y < yEnd; y++) {
 		for (var x = xStart; x < xEnd; x++) {
 			var fieldType = this.grid[y][x];
-			if (fieldType) return fieldType;
+			if (fieldType) 
+				return fieldType;
 		}
 	}
 };
@@ -255,11 +256,11 @@ Level.prototype.animate = function(step, keys) {
 
 	// Ensure each is maximum 100 milliseconds 
 	while (step > 0) {
-	var thisStep = Math.min(step, maxStep);
-	this.actors.forEach(function(actor) {
-		// Allow each actor to act on their surroundings
-		actor.act(thisStep, this, keys);
-	}, this);
+		var thisStep = Math.min(step, maxStep);
+		this.actors.forEach(function(actor) {
+			// Allow each actor to act on their surroundings
+			actor.act(thisStep, this, keys);
+		}, this);
 	// Do this by looping across the step size, subtracing either the
 	// step itself or 100 milliseconds
 	step -= thisStep;
@@ -267,11 +268,18 @@ Level.prototype.animate = function(step, keys) {
 };
 
 var wobbleSpeed = 8, wobbleDist = 0.07;
+//var flag = true;
 
 Coin.prototype.act = function(step) {
 	this.wobble += step * wobbleSpeed;
 	var wobblePos = Math.sin(this.wobble) * wobbleDist;
 	this.pos = this.basePos.plus(new Vector(0, wobblePos));
+};
+
+Ruby.prototype.act = function(step) {
+	this.wobble += step * (wobbleSpeed + 15);
+	var wobblePos = Math.sin(this.wobble) * (wobbleDist + 0.10);
+	this.pos = this.basePos.plus(new Vector(wobblePos, (wobblePos / 10)));
 };
 
 var maxStep = 0.05;
@@ -330,6 +338,11 @@ Player.prototype.act = function(step, level, keys) {
 
 Level.prototype.playerTouched = function(type, actor) {
 	if (type == "coin") {
+		this.actors = this.actors.filter(function(other) {
+			return other != actor;
+		});
+	}
+	else if (type == "ruby") {
 		this.actors = this.actors.filter(function(other) {
 			return other != actor;
 		});
