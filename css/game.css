@@ -12,12 +12,12 @@
 
 .lava          
 { 
-	background: #7f0000; 
+	background: linear-gradient(red, maroon); 
 }
 
 .wall
 {
-	background: grey;   
+	background: linear-gradient(gray, black, gray);   
 }
 
 .actor  
@@ -27,17 +27,17 @@
 
 .player 
 { 
-	background: #FF69B4;
+	background: linear-gradient(red, pink);
 }
 
 .lost .player 
 {
-  background: rgb(160, 64, 64);
+  background: gray;
 }
 
 .won .player 
 {
-  box-shadow: -4px -7px 8px white, 4px -7px 8px white;
+  box-shadow: -8px -14px 16px yellow, 20px -20px 20px green;
 }
 
 .coin
@@ -47,7 +47,18 @@
 
 .ruby
 {
-	background: red;
+	background-image: radial-gradient(green, lime);
+}
+
+.teleport
+{
+	background: blue;
+	border: white;
+}
+
+.goal
+{
+	background: linear-gradient(grey, yellow);
 }
 .game {
   overflow: hidden;

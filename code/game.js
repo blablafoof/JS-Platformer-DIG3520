@@ -2,7 +2,10 @@
 var actorChars = {
 	"@": Player,
 	"o": Coin, // A coin will wobble up and down
-	"r": Ruby
+	"r": Ruby,
+	"t": Teleport,
+	"g": Goal,
+	"=": Lava, "|": Lava, "v": Lava
 };
 
 function Level(plan) {
@@ -81,6 +84,12 @@ function Player(pos) {
 }
 Player.prototype.type = "player";
 
+function Teleport(pos) {
+	this.basePos = this.pos = pos.plus(new Vector(0.2, 0.1));
+	this.size = new Vector(0.4, 0.7);
+	this.wobble = Math.random() * Math.PI * 2;
+}
+Teleport.prototype.type = "teleport";
 
 // Add a new actor type as a class
 function Coin(pos) {
@@ -98,6 +107,36 @@ function Ruby(pos) {
 	this.wobble = Math.random() * Math.PI * 2;
 }
 Ruby.prototype.type = "ruby";
+
+// Lava is initialized based on the character, but otherwise has a
+// size and position
+function Lava(pos, ch) {
+	this.pos = pos;
+	this.size = new Vector(1, 1);
+	if (ch == "=") 
+	{
+		// Horizontal lava
+		this.speed = new Vector(2, 0);
+	} 
+	else if (ch == "|") 
+	{
+		// Vertical lava
+		this.speed = new Vector(0, 2);
+	} 
+	else if (ch == "v") 
+	{
+		// Drip lava. Repeat back to this pos.
+		this.speed = new Vector(0, 3);
+		this.repeatPos = pos;
+	}
+}
+Lava.prototype.type = "lava";
+
+function Goal(pos, ch) {
+	this.pos = pos;
+	this.size = new Vector(1, 1);
+}
+Goal.prototype.type = "goal";
 
 // Helper function to easily create an element of a type provided 
 // and assign it a class.
@@ -144,23 +183,7 @@ DOMDisplay.prototype.drawBackground = function() {
 
 // All actors are above (in front of) background elements.  
 DOMDisplay.prototype.drawActors = function() {
-  // Create a new container div for actor dom elements
-  var wrap = elt("div");
 
-  // Create a new element for each actor each frame
-  this.level.actors.forEach(function(actor) {
-    var rect = wrap.appendChild(elt("div",
-                                    "actor " + actor.type));
-    rect.style.width = actor.size.x * scale + "px";
-    rect.style.height = actor.size.y * scale + "px";
-    rect.style.left = actor.pos.x * scale + "px";
-    rect.style.top = actor.pos.y * scale + "px";
-  });
-  return wrap;
-};
-
-// Draw the player agent
-DOMDisplay.prototype.drawPlayer = function() {
 	// Create a new container div for actor dom elements
 	var wrap = elt("div");
 
@@ -227,9 +250,10 @@ Level.prototype.obstacleAt = function(pos, size) {
 	var yEnd = Math.ceil(pos.y + size.y);
 
 	// Consider the sides and top and bottom of the level as walls
-	if (xStart < 0 || xEnd > this.width || yStart < 0 || yEnd > this.height)
+	if (xStart < 0 || xEnd > this.width || yStart < 0)
 		return "wall";
-
+	if (yEnd > this.height) 
+		return "lava";
 	// Check each grid position starting at yStart, xStart
 	// for a possible obstacle (non null value)
 	for (var y = yStart; y < yEnd; y++) {
@@ -293,8 +317,31 @@ Coin.prototype.act = function(step) {
 Ruby.prototype.act = function(step) {
 	this.wobble += step * (wobbleSpeed + 15);
 	var wobblePos = Math.sin(this.wobble) * (wobbleDist + 0.10);
+	this.pos = this.basePos.plus(new Vector(wobblePos, 0));
+};
+
+Lava.prototype.act = function(step, level) {
+	var newPos = this.pos.plus(this.speed.times(step));
+	if (!level.obstacleAt(newPos, this.size))
+		this.pos = newPos;
+	else if (this.repeatPos)
+		this.pos = this.repeatPos;
+	else
+		this.speed = this.speed.times(-1);
+};
+
+Teleport.prototype.act = function(step, level) {
+	this.wobble += step * (wobbleSpeed * 0.2);
+	var wobblePos = Math.sin(this.wobble) * (wobbleDist + 3.10);
 	this.pos = this.basePos.plus(new Vector(wobblePos, (wobblePos / 10)));
 };
+
+Goal.prototype.act = function(step, level)
+{
+	
+	
+	
+}
 
 var maxStep = 0.05;
 
@@ -331,15 +378,12 @@ Player.prototype.moveY = function(step, level, keys) {
 	var obstacle = level.obstacleAt(newPos, this.size);
 	if(obstacle) 
 	{
+		
 		level.playerTouched(obstacle);
 		if(keys.up && this.speed.y > 0) 
 			this.speed.y = -jumpSpeed;
 		else
 			this.speed.y = 0;
-		if(obstacle == "lava")
-		{
-			this.pos = new Vector(3, 7);
-		}
 	}
 	else
 	{
@@ -352,8 +396,13 @@ Player.prototype.act = function(step, level, keys) {
 	this.moveY(step, level, keys);
 
 	var otherActor = level.actorAt(this);
-	if (otherActor)
+	
+	if (otherActor){
+		
+		if(otherActor.type == "teleport")
+			this.teleport();
 		level.playerTouched(otherActor.type, otherActor);
+	}
 	
 	// Losing animation
 	if (level.status == "lost") {
@@ -362,8 +411,14 @@ Player.prototype.act = function(step, level, keys) {
 	}
 };
 
+Player.prototype.teleport = function()
+{
+	console.log("TELEPORTED");
+	var motion = new Vector(-5, 0);
+	var newPos = this.pos.plus(motion);
+	this.pos = newPos;
+}
 Level.prototype.playerTouched = function(type, actor) {
-	
 	// if the player touches lava and the player hasn't won
 	// Player loses
 	if (type == "lava" && this.status == null) {
@@ -374,22 +429,41 @@ Level.prototype.playerTouched = function(type, actor) {
 		this.actors = this.actors.filter(function(other) {
 			return other != actor;
 		});
+	
+		// If there aren't any coins left, player wins
+		if (!this.actors.some(function(actor)
+		{
+			return actor.type == "coin";
+		}))
+		{
+			this.status = "won";
+			this.finishDelay = 1;
+		}
 	}
 	else if (type == "ruby") {
 		this.actors = this.actors.filter(function(other) {
 			return other != actor;
 		});
+		
+		wobbleSpeed += 5;
+		wobbleDist += 0.05;
+		playerXSpeed -= 1;
 	}
-	
-    // If there aren't any coins left, player wins
-    if (!this.actors.some(function(actor)
+	else if (type == "goal")
 	{
-        return actor.type == "coin";
-    })) 
-	{
-		this.status = "won";
-		this.finishDelay = 1;
-    }
+		this.actors = this.actors.filter(function(other) {
+			return other != actor;
+		});
+		
+		this.actors.some(function(actor)
+		{
+			return actor.type == "goal";
+		})
+		{
+			this.status = "won";
+			this.finishDelay = 1;
+		}
+	}
 };
 
 // Arrow key codes for readibility
@@ -461,12 +535,19 @@ function runLevel(level, Display, andThen) {
 }
 
 function runGame(plans, Display) {
+	var audio = new Audio('haha.mp4');
 	function startLevel(n) {
 		// Create a new level using the nth element of array plans
 		// Pass in a reference to Display function, DOMDisplay (in index.html).
 		runLevel(new Level(plans[n]), Display, function(status) {
 		if (status == "lost")
+		{
+			wobbleSpeed = 8;
+			wobbleDist = 0.07;
+			playerXSpeed = 9;
+			audio.play();
 			startLevel(n);
+		}
 		else if (n < plans.length - 1)
 			startLevel(n + 1);
 		else
